@@ -22,8 +22,7 @@ def create_app():
     app.config["DB_USER"] = "application"
     app.config["DB_PASSWORD"] = "tf123"
     app.config["DB_URI"] = (
-        f'mongodb://{app.config["DB_USER"]
-                     }:{app.config["DB_PASSWORD"]}@127.0.0.1:9000/'
+        f'mongodb://{app.config["DB_USER"]}:{app.config["DB_PASSWORD"]}@127.0.0.1:9000/'
     )
     app.config["DB_NAME"] = "tagfolio"
     # JWT and other stuff
@@ -56,9 +55,9 @@ def create_app():
         )
 
     # Import the routes to register them with the app
-    # from app.user.routes import user_bp
+    from app.image.routes import image_bp
 
     # Register the blueprints
-    # app.register_blueprint(user_bp, url_prefix="/user")
+    app.register_blueprint(image_bp, url_prefix="/image")
 
     return app

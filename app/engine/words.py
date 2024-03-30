@@ -16,8 +16,9 @@ def find_representative_words(similar_words):
             hypernyms = synset.hypernyms()
             # Increment count for each hypernym
             for hypernym in hypernyms:
-                hypernym_name = hypernym.name().split(
-                    '.')[0]  # Extract the hypernym name
+                hypernym_name = hypernym.name().split(".")[
+                    0
+                ]  # Extract the hypernym name
                 hypernym_counts[hypernym_name] += 1
 
     # Find the three most common hypernyms
