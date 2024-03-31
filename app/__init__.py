@@ -9,6 +9,7 @@ from colorama import Fore, Style
 from flask_cors import CORS
 
 from app.utils.database import db_alive
+from app.engine.object_identify_original import get_tags_whole_object
 
 
 def create_app():
@@ -22,12 +23,14 @@ def create_app():
     app.config["DB_USER"] = "application"
     app.config["DB_PASSWORD"] = "tf123"
     app.config["DB_URI"] = (
-        f'mongodb://{app.config["DB_USER"]}:{app.config["DB_PASSWORD"]}@127.0.0.1:9000/'
+        f'mongodb://{app.config["DB_USER"]
+                     }:{app.config["DB_PASSWORD"]}@127.0.0.1:9000/'
     )
     app.config["DB_NAME"] = "tagfolio"
     # JWT and other stuff
     app.config["JWT_SECRET_KEY"] = "super-secret"
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=6)
+    app.config['CONTENT-DIRECTORY'] = os.path.join(os.getcwd(), "content")
 
     # Monitoring the environment variable (No env variables yet so comment it)
     # if any(
@@ -46,6 +49,8 @@ def create_app():
     # The main / route to ping the whole server
     @app.route("/", methods=("GET",))
     def home():
+        print(get_tags_whole_object('603f5b40872f4f94a26d027e',
+              'bucketone', 'car.jpg', network='DENSENET'))
         return jsonify(
             {
                 "status": 200,

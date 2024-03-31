@@ -19,7 +19,8 @@ def analyze_resnet(image_path):
     image_resized = cv2.resize(image, (224, 224))
 
     # Preprocess the image
-    image_resized = tf.keras.applications.mobilenet_v2.preprocess_input(image_resized)
+    image_resized = tf.keras.applications.mobilenet_v2.preprocess_input(
+        image_resized)
 
     # Expand dimensions to create a batch (required by the model)
     input_tensor = tf.expand_dims(image_resized, 0)
@@ -50,7 +51,8 @@ def analyze_densenet(image_path):
     image_resized = cv2.resize(image, (224, 224))
 
     # Preprocess the image
-    image_resized = tf.keras.applications.mobilenet_v2.preprocess_input(image_resized)
+    image_resized = tf.keras.applications.mobilenet_v2.preprocess_input(
+        image_resized)
 
     # Expand dimensions to create a batch (required by the model)
     input_tensor = tf.expand_dims(image_resized, 0)
@@ -70,7 +72,8 @@ def analyze_densenet(image_path):
 
 
 def get_tags_whole_object(user_id, bucket_name, media_name, network="RESNET"):
-    image_path = os.path.join(os.getcwd(), "content", user_id, bucket_name, media_name)
+    image_path = os.path.join(os.getcwd(), "content",
+                              user_id, bucket_name, media_name)
     analyzer = {"RESNET": analyze_resnet, "DENSENET": analyze_densenet}
     result = analyzer[network](image_path)
     tags = [item[0] for item in result[0:4]]
