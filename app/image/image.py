@@ -25,12 +25,6 @@ def login():
 
     saved_files = []
 
-    # checking if any already exists
-    for file in files:
-        filename = secure_filename(file.filename)
-        if os.path.exists(os.path.join(save_directory, filename)):
-            return jsonify('File already exists'), 400
-
     for file in files:
         if file.filename == '':
             return 'No selected file', 400

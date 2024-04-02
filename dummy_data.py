@@ -12,6 +12,9 @@ dummy_data = {
                 "shahrukh": {
                     "name": ["Shahrukh Khan"]
                 },
+                "kajol": {
+                    "name": ["Kajol Devgan"]
+                }
             },
             "buckets": [
                 {
