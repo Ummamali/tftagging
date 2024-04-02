@@ -15,19 +15,19 @@ from werkzeug.utils import secure_filename
 def login():
     user_id = get_jwt_identity()
     # Check if the POST request has the file part
-    if 'files' not in request.files:
-        return jsonify(msg='No files!'), 400
+    if "files" not in request.files:
+        return jsonify(msg="No files!"), 400
 
-    files = request.files.getlist('files')
+    files = request.files.getlist("files")
 
     # Specify the directory where you want to save the images
-    save_directory = os.path.join(os.getcwd(), "content", user_id, '_temp')
+    save_directory = os.path.join(os.getcwd(), "content", user_id, "_temp")
 
     saved_files = []
 
     for file in files:
-        if file.filename == '':
-            return 'No selected file', 400
+        if file.filename == "":
+            return "No selected file", 400
         if file:
             filename = secure_filename(file.filename)
             file.save(os.path.join(save_directory, filename))
@@ -39,59 +39,57 @@ def login():
 ask_tags_schema = {
     "type": "object",
     "properties": {
-        "filenames": {
-            "type": "array",
-            "items": {"type": "string"}
-        },
+        "filenames": {"type": "array", "items": {"type": "string"}},
         "bucketName": {"type": "string"},
-        "algo": {"type": "string"}
+        "algo": {"type": "string"},
     },
-    "required": ["filenames", "bucketName", 'algo']
+    "required": ["filenames", "bucketName", "algo"],
 }
 
 
-@image_bp.route("/askTags", methods=['POST'])
+@image_bp.route("/askTags", methods=["POST"])
 @jwt_required()
 @validate_schema(ask_tags_schema)
 def ask_tags():
     user_id = get_jwt_identity()
     req_obj = request.json
-    filenames = req_obj['filenames']
+    filenames = req_obj["filenames"]
     bucket_path = os.path.join(
-        current_app.config['CONTENT-DIRECTORY'], user_id, req_obj['bucketName'])
+        current_app.config["CONTENT-DIRECTORY"], user_id, req_obj["bucketName"]
+    )
     file_tags = []
     for itemName in filenames:
         item_path = os.path.join(bucket_path, itemName)
         if os.path.exists(item_path):
             tags = get_tags_whole_object(
-                user_id, req_obj['bucketName'], itemName, req_obj['algo'])
-            file_tags.append({'filename': itemName, 'tags': tags})
+                user_id, req_obj["bucketName"], itemName, req_obj["algo"]
+            )
+            file_tags.append({"filename": itemName, "tags": tags})
         else:
-            file_tags.append({'filename': itemName, 'tags': []})
+            file_tags.append({"filename": itemName, "tags": []})
     return jsonify(file_tags)
 
 
 ask_tags_facial_schema = {
     "type": "object",
     "properties": {
-        "filenames": {
-            "type": "array",
-            "items": {"type": "string"}
-        },
-        "bucketName": {"type": "string"}
+        "filenames": {"type": "array", "items": {"type": "string"}},
+        "bucketName": {"type": "string"},
     },
-    "required": ["filenames", "bucketName"]
+    "required": ["filenames", "bucketName"],
 }
 
 
-@image_bp.route("/askTags/facial", methods=['POST'])
+@image_bp.route("/askTags/facial", methods=["POST"])
 @jwt_required()
 @validate_schema(ask_tags_facial_schema)
 def ask_tags_facial():
     user_id = get_jwt_identity()
     req_obj = request.json
-    filenames = req_obj['filenames']
+    filenames = req_obj["filenames"]
     bucket_path = os.path.join(
-        current_app.config['CONTENT-DIRECTORY'], user_id, req_obj['bucketName'])
+        current_app.config["CONTENT-DIRECTORY"], user_id, req_obj["bucketName"]
+    )
+
     faces = tag_people_in(bucket_path, filenames, user_id)
     return jsonify(faces)
