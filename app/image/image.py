@@ -8,11 +8,12 @@ from app.engine.object_identify_original import get_tags_whole_object
 from app.engine.facial.person_tagging import tag_people_in
 import os
 from werkzeug.utils import secure_filename
+from app.image.utils.utils import move_media_from_temp
 
 
 @image_bp.route("/save", methods=["POST"])
 @jwt_required()
-def login():
+def save_media():
     user_id = get_jwt_identity()
     # Check if the POST request has the file part
     if "files" not in request.files:
@@ -93,3 +94,32 @@ def ask_tags_facial():
 
     faces = tag_people_in(bucket_path, filenames, user_id)
     return jsonify(faces)
+
+
+recognize_media_schema = schema = {
+    "type": "object",
+    "properties": {
+        "bucketName": {"type": "string"},
+        "mediaNames": {
+            "type": "array",
+            "items": {"type": "string"}
+        },
+        "tags": {
+            "type": "object",
+        }
+    },
+    "required": ["bucketName", "mediaNames", "tags"]
+}
+
+
+@image_bp.route("/recognize", methods=["POST"])
+@jwt_required()
+@validate_schema(recognize_media_schema)
+def recognize_media_items():
+    user_id = get_jwt_identity()
+    req_obj = request.json
+    bucket_name = req_obj['bucketName']
+    media_names = req_obj['mediaNames']
+    tags_object = req_obj['tags']
+    move_media_from_temp(media_names, user_id, bucket_name, tags_object)
+    return jsonify(msg='recognized')
