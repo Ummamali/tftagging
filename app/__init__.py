@@ -9,7 +9,6 @@ from colorama import Fore, Style
 from flask_cors import CORS
 
 from app.utils.database import db_alive
-from app.engine.facial.person_tagging import tag_people_in
 
 
 def create_app():
@@ -23,7 +22,8 @@ def create_app():
     app.config["DB_USER"] = "application"
     app.config["DB_PASSWORD"] = "tf123"
     app.config["DB_URI"] = (
-        f'mongodb://{app.config["DB_USER"]}:{app.config["DB_PASSWORD"]}@127.0.0.1:9000/'
+        f'mongodb://{app.config["DB_USER"]
+                     }:{app.config["DB_PASSWORD"]}@127.0.0.1:9000/'
     )
     app.config["DB_NAME"] = "tagfolio"
     # JWT and other stuff
@@ -33,7 +33,8 @@ def create_app():
     app.config["TEMP_FOLDER_PATH"] = os.path.join(
         os.getcwd(), "app", "engine", "facial", "_temp"
     )
-    app.config["BRAIN_PATH"] = os.path.join(os.getcwd(), "app", "engine", "facial")
+    app.config["BRAIN_PATH"] = os.path.join(
+        os.getcwd(), "app", "engine", "facial")
 
     # Monitoring the environment variable (No env variables yet so comment it)
     # if any(
