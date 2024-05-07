@@ -19,12 +19,7 @@ def create_app():
     jwt = JWTManager(app)
 
     # Connections with database
-    app.config["DB_USER"] = "application"
-    app.config["DB_PASSWORD"] = "tf123"
-    app.config["DB_URI"] = (
-        f'mongodb://{app.config["DB_USER"]
-                     }:{app.config["DB_PASSWORD"]}@127.0.0.1:9000/'
-    )
+    app.config["DB_URI"] = f"mongodb://127.0.0.1:27017/"
     app.config["DB_NAME"] = "tagfolio"
     # JWT and other stuff
     app.config["JWT_SECRET_KEY"] = "super-secret"
@@ -33,8 +28,7 @@ def create_app():
     app.config["TEMP_FOLDER_PATH"] = os.path.join(
         os.getcwd(), "app", "engine", "facial", "_temp"
     )
-    app.config["BRAIN_PATH"] = os.path.join(
-        os.getcwd(), "app", "engine", "facial")
+    app.config["BRAIN_PATH"] = os.path.join(os.getcwd(), "app", "engine", "facial")
 
     # Monitoring the environment variable (No env variables yet so comment it)
     # if any(
