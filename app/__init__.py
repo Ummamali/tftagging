@@ -8,7 +8,12 @@ from flask import Flask, jsonify
 from colorama import Fore, Style
 from flask_cors import CORS
 
+from app.engine.facial.load_embeddings import load_global_embeddings
+from app.engine.facial.recognize import recognize_faces
+
 from app.utils.database import db_alive
+
+import sys
 
 
 def create_app():
@@ -28,7 +33,11 @@ def create_app():
     app.config["TEMP_FOLDER_PATH"] = os.path.join(
         os.getcwd(), "app", "engine", "facial", "_temp"
     )
-    app.config["BRAIN_PATH"] = os.path.join(os.getcwd(), "app", "engine", "facial")
+    app.config["BRAIN_PATH"] = os.path.join(
+        os.getcwd(), "app", "engine", "facial")
+
+    app.config['global_embeddings'] = load_global_embeddings()
+    print(Fore.BLUE, 'Loading global embeddings....', Style.RESET_ALL)
 
     # Monitoring the environment variable (No env variables yet so comment it)
     # if any(

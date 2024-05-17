@@ -114,6 +114,25 @@ class DBConnection:
         self.client.close()
 
 
+class DBConnectionStatic:
+    def __init__(self, db_uri, db_name):
+        if not db_uri or not db_name:
+            raise Exception('Must give a db uri and name to connect')
+        else:
+            self.db_uri = db_uri
+            self.db_name = db_name
+
+    def __enter__(self):
+        # Connect to MongoDB (Make sure you have MongoDB running locally or provide connection details)
+        self.client = MongoClient(self.db_uri)
+        # Select the database
+        db = self.client[self.db_name]
+        return db
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.client.close()
+
+
 def replace_ids_with_documents(
     data_dict, target, collection_name, projection, stringify_id=True
 ):

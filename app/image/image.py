@@ -5,11 +5,15 @@ from http import HTTPStatus
 from .routes import image_bp
 from app.utils.middlewares import validate_schema
 from app.engine.object_identify_original import get_tags_whole_object
-from app.engine.facial.person_tagging import tag_people_in
+from app.engine.facial.recognize import recognize_faces
+from app.engine.facial.face_extractor import extract_faces
+from app.engine.facial.embed_known_faces import get_embedding
 import os
 from werkzeug.utils import secure_filename
 from app.image.utils.utils import move_media_from_temp
 from bson import ObjectId
+import numpy as np
+import cv2
 
 
 @image_bp.route("/save", methods=["POST"])
@@ -82,19 +86,62 @@ ask_tags_facial_schema = {
 }
 
 
-@image_bp.route("/askTags/facial", methods=["POST"])
-@jwt_required()
-@validate_schema(ask_tags_facial_schema)
+# @jwt_required()
+# @validate_schema(ask_tags_facial_schema)
+@image_bp.route("/tags/facial", methods=["POST"])
 def ask_tags_facial():
-    user_id = get_jwt_identity()
-    req_obj = request.json
-    filenames = req_obj["filenames"]
-    bucket_path = os.path.join(
-        current_app.config["CONTENT-DIRECTORY"], user_id, req_obj["bucketName"]
-    )
+    # # user_id = get_jwt_identity()
+    # req_obj = request.json
+    # # filenames = req_obj["filenames"]
+    # bucket_path = os.path.join(
+    #     current_app.config["CONTENT-DIRECTORY"], user_id, req_obj["bucketName"]
+    # )
 
-    faces = tag_people_in(bucket_path, filenames, user_id)
-    return jsonify(faces)
+    # faces = tag_people_in(bucket_path, filenames, user_id)
+    # return jsonify(faces)
+    if 'image' not in request.files:
+        return jsonify({'error': 'No file part in the request'}), 400
+
+    file = request.files['image']
+
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+
+    # Convert uploaded image to numpy array
+    file_stream = file.stream
+    nparr = np.frombuffer(file_stream.read(), np.uint8)
+    img_np = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+    faces = extract_faces(img_np)
+    print(f'{len(faces)} face extracted')
+    embeddings = [get_embedding(face) for face in faces]
+    predictions = recognize_faces(
+        embeddings, {}, current_app.config['global_embeddings'])
+
+    return jsonify({'predictions': predictions})
+
+
+@image_bp.route("/tags/facial/singleface", methods=["POST"])
+def ask_tags_facial_singleface():
+    if 'image' not in request.files:
+        return jsonify({'error': 'No file part in the request'}), 400
+
+    file = request.files['image']
+
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+
+    # Convert uploaded image to numpy array
+    file_stream = file.stream
+    nparr = np.frombuffer(file_stream.read(), np.uint8)
+    img_np = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+    print([get_embedding(img_np)])
+
+    predictions = recognize_faces(
+        [get_embedding(img_np)], {}, current_app.config['global_embeddings'])
+
+    return jsonify({'predictions': predictions})
 
 
 recognize_media_schema = schema = {
