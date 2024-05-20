@@ -53,27 +53,24 @@ ask_tags_schema = {
 }
 
 
-@image_bp.route("/askTags", methods=["POST"])
-@jwt_required()
-@validate_schema(ask_tags_schema)
-def ask_tags():
-    user_id = get_jwt_identity()
-    req_obj = request.json
-    filenames = req_obj["filenames"]
-    bucket_path = os.path.join(
-        current_app.config["CONTENT-DIRECTORY"], user_id, req_obj["bucketName"]
-    )
-    file_tags = []
-    for itemName in filenames:
-        item_path = os.path.join(bucket_path, itemName)
-        if os.path.exists(item_path):
-            tags = get_tags_whole_object(
-                user_id, req_obj["bucketName"], itemName, req_obj["algo"]
-            )
-            file_tags.append({"filename": itemName, "tags": tags})
-        else:
-            file_tags.append({"filename": itemName, "tags": []})
-    return jsonify(file_tags)
+@image_bp.route("/tags/objects/<algo>", methods=["POST"])
+def ask_tags_object(algo):
+
+    if "image" not in request.files:
+        return jsonify({"error": "No file part in the request"}), 400
+
+    file = request.files["image"]
+
+    if file.filename == "":
+        return jsonify({"error": "No selected file"}), 400
+
+    # Convert uploaded image to numpy array
+    file_stream = file.stream
+    nparr = np.frombuffer(file_stream.read(), np.uint8)
+    img_np = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+    tags = get_tags_whole_object(img_np, algo)
+    return jsonify({"predictions": tags})
 
 
 ask_tags_facial_schema = {
@@ -99,13 +96,13 @@ def ask_tags_facial():
 
     # faces = tag_people_in(bucket_path, filenames, user_id)
     # return jsonify(faces)
-    if 'image' not in request.files:
-        return jsonify({'error': 'No file part in the request'}), 400
+    if "image" not in request.files:
+        return jsonify({"error": "No file part in the request"}), 400
 
-    file = request.files['image']
+    file = request.files["image"]
 
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
+    if file.filename == "":
+        return jsonify({"error": "No selected file"}), 400
 
     # Convert uploaded image to numpy array
     file_stream = file.stream
@@ -113,34 +110,36 @@ def ask_tags_facial():
     img_np = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
     faces = extract_faces(img_np)
-    print(f'{len(faces)} face extracted')
+    print(f"{len(faces)} face extracted")
     embeddings = [get_embedding(face) for face in faces]
     predictions_ids = recognize_faces(
-        embeddings, {}, current_app.config['global_embeddings'])
+        embeddings, {}, current_app.config["global_embeddings"]
+    )
 
     print(None)
 
-    predictions = {'confident': [], 'blurry': []}
+    predictions = {"confident": [], "blurry": []}
 
     for prediction_type in predictions_ids.keys():
         for person_id in predictions_ids[prediction_type]:
             with DBConnection() as db:
-                embeddings_col = db['facial_embeddings']
+                embeddings_col = db["facial_embeddings"]
                 answer = embeddings_col.find_one(
-                    {'personId': person_id}, {'_id': 0, 'tags': 1})
-            predictions[prediction_type].extend(answer['tags'])
-    return jsonify({'predictions': predictions})
+                    {"personId": person_id}, {"_id": 0, "tags": 1}
+                )
+            predictions[prediction_type].extend(answer["tags"])
+    return jsonify({"predictions": predictions})
 
 
 @image_bp.route("/tags/facial/singleface", methods=["POST"])
 def ask_tags_facial_singleface():
-    if 'image' not in request.files:
-        return jsonify({'error': 'No file part in the request'}), 400
+    if "image" not in request.files:
+        return jsonify({"error": "No file part in the request"}), 400
 
-    file = request.files['image']
+    file = request.files["image"]
 
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
+    if file.filename == "":
+        return jsonify({"error": "No selected file"}), 400
 
     # Convert uploaded image to numpy array
     file_stream = file.stream
@@ -148,33 +147,32 @@ def ask_tags_facial_singleface():
     img_np = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
     predictions_ids = recognize_faces(
-        [get_embedding(img_np)], {}, current_app.config['global_embeddings'])
+        [get_embedding(img_np)], {}, current_app.config["global_embeddings"]
+    )
 
-    predictions = {'confident': [], 'blurry': []}
+    predictions = {"confident": [], "blurry": []}
 
     for prediction_type in predictions_ids.keys():
         for person_id in predictions_ids[prediction_type]:
             with DBConnection() as db:
-                embeddings_col = db['facial_embeddings']
+                embeddings_col = db["facial_embeddings"]
                 answer = embeddings_col.find_one(
-                    {'personId': person_id}, {'_id': 0, 'tags': 1})
-            predictions[prediction_type].extend(answer['tags'])
-    return jsonify({'predictions': predictions})
+                    {"personId": person_id}, {"_id": 0, "tags": 1}
+                )
+            predictions[prediction_type].extend(answer["tags"])
+    return jsonify({"predictions": predictions})
 
 
 recognize_media_schema = schema = {
     "type": "object",
     "properties": {
         "bucketName": {"type": "string"},
-        "mediaNames": {
-            "type": "array",
-            "items": {"type": "string"}
-        },
+        "mediaNames": {"type": "array", "items": {"type": "string"}},
         "tags": {
             "type": "object",
-        }
+        },
     },
-    "required": ["bucketName", "mediaNames", "tags"]
+    "required": ["bucketName", "mediaNames", "tags"],
 }
 
 
@@ -184,27 +182,25 @@ recognize_media_schema = schema = {
 def recognize_media_items():
     user_id = get_jwt_identity()
     req_obj = request.json
-    bucket_name = req_obj['bucketName']
-    media_names = req_obj['mediaNames']
-    tags_object = req_obj['tags']
-    bucket_index = req_obj['bucketIndex']
+    bucket_name = req_obj["bucketName"]
+    media_names = req_obj["mediaNames"]
+    tags_object = req_obj["tags"]
+    bucket_index = req_obj["bucketIndex"]
     with DBConnection() as db:
         for name in media_names:
-            new_media_obj = {"title": name,
-                             "path": '/', "tags": tags_object[name]}
-            db['ocean'].update_one(
-                {"_id": ObjectId(user_id),
-                 "buckets.name": bucket_name},
-                {"$push": {"buckets.$.items": new_media_obj}}
+            new_media_obj = {"title": name, "path": "/", "tags": tags_object[name]}
+            db["ocean"].update_one(
+                {"_id": ObjectId(user_id), "buckets.name": bucket_name},
+                {"$push": {"buckets.$.items": new_media_obj}},
             )
 
     move_media_from_temp(media_names, user_id, bucket_name, tags_object)
-    return jsonify(msg='recognized')
+    return jsonify(msg="recognized")
 
 
 @image_bp.route("/get/<path:file_path>", methods=["GET"])
 def get_image(file_path):
     try:
-        return send_file(os.path.join(os.getcwd(), 'content', file_path))
+        return send_file(os.path.join(os.getcwd(), "content", file_path))
     except FileNotFoundError:
         abort(404)
