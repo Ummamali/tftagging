@@ -163,39 +163,61 @@ def ask_tags_facial_singleface():
     return jsonify({"predictions": predictions})
 
 
-recognize_media_schema = schema = {
-    "type": "object",
-    "properties": {
-        "bucketName": {"type": "string"},
-        "mediaNames": {"type": "array", "items": {"type": "string"}},
-        "tags": {
-            "type": "object",
-        },
-    },
-    "required": ["bucketName", "mediaNames", "tags"],
-}
-
-
-@image_bp.route("/recognize", methods=["POST"])
+@image_bp.route("/upload/multiple/data", methods=["POST"])
 @jwt_required()
-@validate_schema(recognize_media_schema)
-def recognize_media_items():
+def upload_multiple_data():
     user_id = get_jwt_identity()
     req_obj = request.json
-    bucket_name = req_obj["bucketName"]
-    media_names = req_obj["mediaNames"]
-    tags_object = req_obj["tags"]
-    bucket_index = req_obj["bucketIndex"]
-    with DBConnection() as db:
-        for name in media_names:
-            new_media_obj = {"title": name, "path": "/", "tags": tags_object[name]}
-            db["ocean"].update_one(
-                {"_id": ObjectId(user_id), "buckets.name": bucket_name},
-                {"$push": {"buckets.$.items": new_media_obj}},
-            )
 
-    move_media_from_temp(media_names, user_id, bucket_name, tags_object)
-    return jsonify(msg="recognized")
+    bucket_name = req_obj["bucketName"]
+    new_items = req_obj["newItems"]
+
+    new_items_modified = []
+
+    for item in new_items:
+        new_items_modified.append({**item, "path": "/"})
+
+    with DBConnection() as db:
+        ocean_col = db["ocean"]
+        result = ocean_col.update_one(
+            {"_id": ObjectId(user_id), "buckets.name": bucket_name},
+            {"$push": {"buckets.$.items": {"$each": new_items_modified}}},
+        )
+        if result.modified_count > 0:
+            return jsonify({"dataSaved": True})
+        else:
+            return jsonify({"dataSaved": False}), 400
+
+
+@image_bp.route("/upload/multiple/files/<bucket_name>", methods=["POST"])
+@jwt_required()
+def upload_multpile_files(bucket_name):
+    user_id = get_jwt_identity()
+    # Check if files are present in the request
+    if "images" not in request.files:
+        return "No files uploaded", 400
+
+    # Get the list of files from the request
+    files = request.files.getlist("images")
+
+    # Define the directory where images will be saved
+    save_dir = os.path.join(os.getcwd(), "content", user_id, bucket_name)
+
+    try:
+        # Iterate over each file and save it to the specified directory
+        for file in files:
+            file.save(os.path.join(save_dir, file.filename))
+
+        return jsonify({"success": True}), 200
+    except Exception as e:
+        image_names = [file.filename for file in files]
+        with DBConnection() as db:
+            ocean_col = db["ocean"]
+            result = ocean_col.update_one(
+                {"_id": ObjectId(user_id), "buckets.name": bucket_name},
+                {"$pull": {"buckets.$.items": {"name": {"$in": image_names}}}},
+            )
+        return jsonify({"msg": str(e), "reverted_count": result.modified_count}), 500
 
 
 @image_bp.route("/get/<path:file_path>", methods=["GET"])
