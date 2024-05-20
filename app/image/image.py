@@ -115,9 +115,20 @@ def ask_tags_facial():
     faces = extract_faces(img_np)
     print(f'{len(faces)} face extracted')
     embeddings = [get_embedding(face) for face in faces]
-    predictions = recognize_faces(
+    predictions_ids = recognize_faces(
         embeddings, {}, current_app.config['global_embeddings'])
 
+    print(None)
+
+    predictions = {'confident': [], 'blurry': []}
+
+    for prediction_type in predictions_ids.keys():
+        for person_id in predictions_ids[prediction_type]:
+            with DBConnection() as db:
+                embeddings_col = db['facial_embeddings']
+                answer = embeddings_col.find_one(
+                    {'personId': person_id}, {'_id': 0, 'tags': 1})
+            predictions[prediction_type].extend(answer['tags'])
     return jsonify({'predictions': predictions})
 
 
@@ -136,11 +147,18 @@ def ask_tags_facial_singleface():
     nparr = np.frombuffer(file_stream.read(), np.uint8)
     img_np = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-    print([get_embedding(img_np)])
-
-    predictions = recognize_faces(
+    predictions_ids = recognize_faces(
         [get_embedding(img_np)], {}, current_app.config['global_embeddings'])
 
+    predictions = {'confident': [], 'blurry': []}
+
+    for prediction_type in predictions_ids.keys():
+        for person_id in predictions_ids[prediction_type]:
+            with DBConnection() as db:
+                embeddings_col = db['facial_embeddings']
+                answer = embeddings_col.find_one(
+                    {'personId': person_id}, {'_id': 0, 'tags': 1})
+            predictions[prediction_type].extend(answer['tags'])
     return jsonify({'predictions': predictions})
 
 

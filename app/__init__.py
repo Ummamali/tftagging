@@ -13,8 +13,6 @@ from app.engine.facial.recognize import recognize_faces
 
 from app.utils.database import db_alive
 
-import sys
-
 
 def create_app():
 

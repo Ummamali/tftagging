@@ -49,8 +49,11 @@ def migrate_global_embeddings():
         embeddings_col = db['facial_embeddings']
         documents = []
         for person_id, embedding in new_embeddings.items():
-            documents.append(
-                {'personId': person_id, 'first': embedding['first'], 'second': embedding['second']})
+            exists = embeddings_col.find_one(
+                {'personId': person_id}) is not None
+            if not exists:
+                documents.append(
+                    {'personId': person_id, 'first': embedding['first'], 'second': embedding['second']})
         embeddings_col.insert_many(documents)
         print('embeddings have been migrated to database')
 
