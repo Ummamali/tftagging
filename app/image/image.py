@@ -184,7 +184,7 @@ def upload_multiple_data():
             {"$push": {"buckets.$.items": {"$each": new_items_modified}}},
         )
         if result.modified_count > 0:
-            return jsonify({"dataSaved": True})
+            return jsonify({"dataSaved": True, "itemsCreated": new_items_modified})
         else:
             return jsonify({"dataSaved": False}), 400
 

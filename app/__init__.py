@@ -31,11 +31,10 @@ def create_app():
     app.config["TEMP_FOLDER_PATH"] = os.path.join(
         os.getcwd(), "app", "engine", "facial", "_temp"
     )
-    app.config["BRAIN_PATH"] = os.path.join(
-        os.getcwd(), "app", "engine", "facial")
+    app.config["BRAIN_PATH"] = os.path.join(os.getcwd(), "app", "engine", "facial")
 
-    app.config['global_embeddings'] = load_global_embeddings()
-    print(Fore.BLUE, 'Loading global embeddings....', Style.RESET_ALL)
+    app.config["global_embeddings"] = load_global_embeddings()
+    print(Fore.BLUE, "Loading global embeddings....", Style.RESET_ALL)
 
     # Monitoring the environment variable (No env variables yet so comment it)
     # if any(
@@ -63,9 +62,11 @@ def create_app():
         )
 
     # Import the routes to register them with the app
-    from app.image.routes import image_bp
+    # from app.image.routes import image_bp
+    from app.chat.routes import chat_bp
 
     # Register the blueprints
-    app.register_blueprint(image_bp, url_prefix="/image")
+    # app.register_blueprint(image_bp, url_prefix="/image")
+    app.register_blueprint(chat_bp, url_prefix="/chat")
 
     return app
