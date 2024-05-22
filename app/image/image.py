@@ -14,6 +14,8 @@ from app.image.utils.utils import move_media_from_temp
 from bson import ObjectId
 import numpy as np
 import cv2
+from app.engine.chatter.utils import get_embedding
+from pprint import pprint
 
 
 @image_bp.route("/save", methods=["POST"])
@@ -112,11 +114,10 @@ def ask_tags_facial():
     faces = extract_faces(img_np)
     print(f"{len(faces)} face extracted")
     embeddings = [get_embedding(face) for face in faces]
+    pprint(embeddings)
     predictions_ids = recognize_faces(
         embeddings, {}, current_app.config["global_embeddings"]
     )
-
-    print(None)
 
     predictions = {"confident": [], "blurry": []}
 
@@ -174,16 +175,35 @@ def upload_multiple_data():
 
     new_items_modified = []
 
+    tag_embeddings = []
+
     for item in new_items:
         new_items_modified.append({**item, "path": "/"})
+        tag_embeddings.append(
+            {
+                "title": item["title"],
+                "tags": {
+                    "people": get_embedding(" ".join(item["tags"]["people"])).tolist(),
+                    "objects": get_embedding(" ".join(item["tags"]["people"])).tolist(),
+                },
+                "boxes": get_embedding(
+                    " ".join([" ".join(box["tags"]) for box in item["boxes"]])
+                ).tolist(),
+            }
+        )
 
     with DBConnection() as db:
         ocean_col = db["ocean"]
+        tag_embeddings_col = db["tag_embeddings"]
         result = ocean_col.update_one(
             {"_id": ObjectId(user_id), "buckets.name": bucket_name},
             {"$push": {"buckets.$.items": {"$each": new_items_modified}}},
         )
-        if result.modified_count > 0:
+        embs_result = tag_embeddings_col.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$push": {f"buckets.{bucket_name}": {"$each": tag_embeddings}}},
+        )
+        if result.modified_count > 0 and embs_result.modified_count > 0:
             return jsonify({"dataSaved": True, "itemsCreated": new_items_modified})
         else:
             return jsonify({"dataSaved": False}), 400

@@ -29,6 +29,7 @@ def recognize_faces(face_embeddings: list, local_embeddings: dict, global_embedd
     for known_person, known_person_em in global_embeddings.items():
         for i, unknown_em in enumerate(face_embeddings):
             if unknown_em is not None:
+                print(unknown_em)
                 similarity = 1 - cosine(known_person_em['first'], unknown_em)
                 second_similarity = 1 - \
                     cosine(known_person_em['second'], unknown_em)
