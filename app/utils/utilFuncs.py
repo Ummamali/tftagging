@@ -48,3 +48,23 @@ def delete_items_in_directory(directory_path, delete_files=True, delete_folders=
         print(f"All items in {directory_path} have been deleted.")
     except Exception as e:
         print(f"Error: {e}")
+
+
+def filter_comparison_scores(tuples_array, threshold):
+    """
+    Filters the tuples in the array based on the threshold score.
+
+    Parameters:
+    tuples_array (list of tuples): An array of tuples (index, score), sorted in descending order of scores.
+    threshold (int or float): The threshold score.
+
+    Returns:
+    list of tuples: An array where all elements have scores greater than the threshold.
+    """
+    result = []
+    for index, score in tuples_array:
+        if score > threshold:
+            result.append((index, score))
+        else:
+            break
+    return result
