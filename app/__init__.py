@@ -64,9 +64,11 @@ def create_app():
     # Import the routes to register them with the app
     from app.image.routes import image_bp
     from app.chat.routes import chat_bp
+    from app.video.routes import video_bp
 
     # Register the blueprints
     app.register_blueprint(image_bp, url_prefix="/image")
     app.register_blueprint(chat_bp, url_prefix="/chat")
+    app.register_blueprint(video_bp, url_prefix="/video")
 
     return app

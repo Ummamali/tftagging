@@ -10,6 +10,7 @@ def load_global_embeddings():
         for item in documents:
             global_embeddings[item['personId']] = {
                 'first': array(item['first'], dtype=float32), 'second': array(item['second'], dtype=float32)}
+    print(global_embeddings)
     return global_embeddings
 
 
